@@ -116,9 +116,7 @@ class Composed(Composable):
         return list(self._wrapped)
 
     def as_string(self, context):
-        rv = []
-        for i in self._wrapped:
-            rv.append(i.as_string(context))
+        rv = [i.as_string(context) for i in self._wrapped]
         return ''.join(rv)
 
     def __iter__(self):
@@ -280,9 +278,7 @@ class SQL(Composable):
             pass
         else:
             for i in it:
-                rv.append(self)
-                rv.append(i)
-
+                rv.extend((self, i))
         return Composed(rv)
 
 
@@ -413,10 +409,7 @@ class Placeholder(Composable):
             self._wrapped if self._wrapped is not None else '',)
 
     def as_string(self, context):
-        if self._wrapped is not None:
-            return "%%(%s)s" % self._wrapped
-        else:
-            return "%s"
+        return "%%(%s)s" % self._wrapped if self._wrapped is not None else "%s"
 
 
 # Literals

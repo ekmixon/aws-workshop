@@ -41,14 +41,9 @@ class JWTAuthentication(authentication.BaseAuthentication):
         if not auth_header:
             return None
 
-        if len(auth_header) == 1:
+        if len(auth_header) == 1 or len(auth_header) > 2:
             # Invalid token header. No credentials provided. Do not attempt to
             # authenticate.
-            return None
-
-        elif len(auth_header) > 2:
-            # Invalid token header. Token string should not contain spaces. Do
-            # not attempt to authenticate.
             return None
 
         # The JWT library we're using can't handle the `byte` type, which is

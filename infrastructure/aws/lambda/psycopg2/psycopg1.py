@@ -69,28 +69,15 @@ class cursor(_2cursor):
     """
 
     def __build_dict(self, row):
-        res = {}
-        for i in range(len(self.description)):
-            res[self.description[i][0]] = row[i]
-        return res
+        return {self.description[i][0]: row[i] for i in range(len(self.description))}
 
     def dictfetchone(self):
-        row = _2cursor.fetchone(self)
-        if row:
-            return self.__build_dict(row)
-        else:
-            return row
+        return self.__build_dict(row) if (row := _2cursor.fetchone(self)) else row
 
     def dictfetchmany(self, size):
-        res = []
         rows = _2cursor.fetchmany(self, size)
-        for row in rows:
-            res.append(self.__build_dict(row))
-        return res
+        return [self.__build_dict(row) for row in rows]
 
     def dictfetchall(self):
-        res = []
         rows = _2cursor.fetchall(self)
-        for row in rows:
-            res.append(self.__build_dict(row))
-        return res
+        return [self.__build_dict(row) for row in rows]

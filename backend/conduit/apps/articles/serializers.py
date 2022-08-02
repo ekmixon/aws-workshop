@@ -62,10 +62,11 @@ class ArticleSerializer(serializers.ModelSerializer):
         if request is None:
             return False
 
-        if not request.user.is_authenticated():
-            return False
-
-        return request.user.profile.has_favorited(instance)
+        return (
+            request.user.profile.has_favorited(instance)
+            if request.user.is_authenticated()
+            else False
+        )
 
     def get_favorites_count(self, instance):
         return instance.favorited_by.count()

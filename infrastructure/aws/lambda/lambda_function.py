@@ -19,33 +19,28 @@ db_port = 5432
 def create_conn():
     conn = None
     try:
-        conn = psycopg2.connect("dbname={} user={} host={} password={}".format(
-            db_name, db_user, db_host, db_pass))
+        conn = psycopg2.connect(
+            f"dbname={db_name} user={db_user} host={db_host} password={db_pass}"
+        )
+
     except:
         print("Cannot connect.")
     return conn
 
 
 def fetch(conn, query):
-    result = []
-    print("Now executing: {}".format(query))
+    print(f"Now executing: {query}")
     cursor = conn.cursor()
     cursor.execute(query)
     raw = cursor.fetchall()
-    for line in raw:
-        result.append(line)
-    return result
+    return list(raw)
 
 
 def lambda_handler(event, context):
 
     print(event)
 
-    if 'query' in event.keys():
-        query = event['query']
-    else:
-        query = ''
-
+    query = event['query'] if 'query' in event.keys() else ''
     query_cmd = "select * from articles_article where title like '%"+query+"%'"
 
     print(query_cmd)

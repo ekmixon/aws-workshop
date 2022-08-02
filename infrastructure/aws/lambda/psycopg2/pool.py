@@ -54,7 +54,7 @@ class AbstractConnectionPool(object):
         self._rused = {}    # id(conn) -> key map
         self._keys = 0
 
-        for i in range(self.minconn):
+        for _ in range(self.minconn):
             self._connect()
 
     def _connect(self, key=None):

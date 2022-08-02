@@ -56,7 +56,7 @@ class Range(object):
 
     def __repr__(self):
         if self._bounds is None:
-            return "%s(empty=True)" % self.__class__.__name__
+            return f"{self.__class__.__name__}(empty=True)"
         else:
             return "%s(%r, %r, %r)" % (self.__class__.__name__,
                 self._lower, self._upper, self._bounds)
@@ -79,16 +79,12 @@ class Range(object):
     @property
     def lower_inf(self):
         """`!True` if the range doesn't have a lower bound."""
-        if self._bounds is None:
-            return False
-        return self._lower is None
+        return False if self._bounds is None else self._lower is None
 
     @property
     def upper_inf(self):
         """`!True` if the range doesn't have an upper bound."""
-        if self._bounds is None:
-            return False
-        return self._upper is None
+        return False if self._bounds is None else self._upper is None
 
     @property
     def lower_inc(self):
@@ -108,33 +104,32 @@ class Range(object):
         if self._bounds is None:
             return False
 
-        if self._lower is not None:
-            if self._bounds[0] == '[':
-                if x < self._lower:
-                    return False
-            else:
-                if x <= self._lower:
-                    return False
-
-        if self._upper is not None:
-            if self._bounds[1] == ']':
-                if x > self._upper:
-                    return False
-            else:
-                if x >= self._upper:
-                    return False
-
-        return True
+        if self._lower is not None and (
+            self._bounds[0] == '['
+            and x < self._lower
+            or self._bounds[0] != '['
+            and x <= self._lower
+        ):
+            return False
+        return (
+            self._upper is None
+            or (self._bounds[1] != ']' or x <= self._upper)
+            and (self._bounds[1] == ']' or x < self._upper)
+        )
 
     def __bool__(self):
         return self._bounds is not None
 
     def __eq__(self, other):
-        if not isinstance(other, Range):
-            return False
-        return (self._lower == other._lower
-            and self._upper == other._upper
-            and self._bounds == other._bounds)
+        return (
+            (
+                self._lower == other._lower
+                and self._upper == other._upper
+                and self._bounds == other._bounds
+            )
+            if isinstance(other, Range)
+            else False
+        )
 
     def __ne__(self, other):
         return not self.__eq__(other)
@@ -163,29 +158,20 @@ class Range(object):
         return False
 
     def __le__(self, other):
-        if self == other:
-            return True
-        else:
-            return self.__lt__(other)
+        return True if self == other else self.__lt__(other)
 
     def __gt__(self, other):
-        if isinstance(other, Range):
-            return other.__lt__(self)
-        else:
-            return NotImplemented
+        return other.__lt__(self) if isinstance(other, Range) else NotImplemented
 
     def __ge__(self, other):
-        if self == other:
-            return True
-        else:
-            return self.__gt__(other)
+        return True if self == other else self.__gt__(other)
 
     def __getstate__(self):
-        return dict(
-            (slot, getattr(self, slot))
+        return {
+            slot: getattr(self, slot)
             for slot in self.__slots__
             if hasattr(self, slot)
-        )
+        }
 
     def __setstate__(self, state):
         for slot, value in list(state.items()):
@@ -268,7 +254,7 @@ class RangeAdapter(object):
             upper = b'NULL'
 
         return self.name.encode('utf8') + b'(' + lower + b', ' + upper \
-            + b", '" + r._bounds.encode('utf8') + b"')"
+                + b", '" + r._bounds.encode('utf8') + b"')"
 
 
 class RangeCaster(object):
@@ -288,7 +274,9 @@ class RangeCaster(object):
 
         if array_oid is not None:
             self.array_typecaster = new_array_type(
-                (array_oid,), name + "ARRAY", self.typecaster)
+                (array_oid,), f"{name}ARRAY", self.typecaster
+            )
+
         else:
             self.array_typecaster = None
 
@@ -328,7 +316,7 @@ class RangeCaster(object):
                 'pyrange must be a type or a Range strict subclass')
 
     @classmethod
-    def _from_db(self, name, pyrange, conn_or_curs):
+    def _from_db(cls, name, pyrange, conn_or_curs):
         """Return a `RangeCaster` instance for the type *pgrange*.
 
         Raise `ProgrammingError` if the type is not found.
@@ -338,8 +326,10 @@ class RangeCaster(object):
         conn, curs = _solve_conn_curs(conn_or_curs)
 
         if conn.server_version < 90200:
-            raise ProgrammingError("range types not available in version %s"
-                % conn.server_version)
+            raise ProgrammingError(
+                f"range types not available in version {conn.server_version}"
+            )
+
 
         # Store the transaction status of the connection to revert it after use
         conn_status = conn.status
@@ -474,20 +464,8 @@ class NumberRangeAdapter(RangeAdapter):
         if r.isempty:
             return b"'empty'"
 
-        if not r.lower_inf:
-            # not exactly: we are relying that none of these object is really
-            # quoted (they are numbers). Also, I'm lazy and not preparing the
-            # adapter because I assume encoding doesn't matter for these
-            # objects.
-            lower = adapt(r.lower).getquoted().decode('ascii')
-        else:
-            lower = ''
-
-        if not r.upper_inf:
-            upper = adapt(r.upper).getquoted().decode('ascii')
-        else:
-            upper = ''
-
+        lower = '' if r.lower_inf else adapt(r.lower).getquoted().decode('ascii')
+        upper = '' if r.upper_inf else adapt(r.upper).getquoted().decode('ascii')
         return ("'%s%s,%s%s'" % (
             r._bounds[0], lower, upper, r._bounds[1])).encode('ascii')
 

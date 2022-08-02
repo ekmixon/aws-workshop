@@ -39,10 +39,11 @@ def lookup(code, _cache={}):
         return _cache[code]
 
     # Generate the lookup map at first usage.
-    tmp = {}
-    for k, v in globals().items():
-        if isinstance(v, str) and len(v) in (2, 5):
-            tmp[v] = k
+    tmp = {
+        v: k
+        for k, v in globals().items()
+        if isinstance(v, str) and len(v) in {2, 5}
+    }
 
     assert tmp
 

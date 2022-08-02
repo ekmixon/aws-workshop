@@ -163,15 +163,14 @@ def make_dsn(dsn=None, **kwargs):
         kwargs['dbname'] = kwargs.pop('database')
 
     # Drop the None arguments
-    kwargs = dict((k, v) for (k, v) in kwargs.items() if v is not None)
+    kwargs = {k: v for (k, v) in kwargs.items() if v is not None}
 
     if dsn is not None:
         tmp = parse_dsn(dsn)
         tmp.update(kwargs)
         kwargs = tmp
 
-    dsn = " ".join(["%s=%s" % (k, _param_escape(str(v)))
-        for (k, v) in kwargs.items()])
+    dsn = " ".join([f"{k}={_param_escape(str(v))}" for (k, v) in kwargs.items()])
 
     # verify that the returned dsn is valid
     parse_dsn(dsn)
